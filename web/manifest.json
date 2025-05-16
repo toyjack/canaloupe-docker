@@ -1,0 +1,46 @@
+{
+  "@context": "http://iiif.io/api/presentation/3/context.json",
+  "@id": "https://iiif.io/api/cookbook/recipe/0001-mvm-image/manifest.json",
+  "@type": "sc:Manifest",
+  "label": {
+    "en": ["Single Image Example"]
+  },
+  "sequences": [
+    {
+      "@type": "sc:Sequence",
+      "viewingHint": "individuals",
+      "thumbnail": {
+        "@id": "http://localhost:8182/iiif/3/A0040002.tif/full/max/0/default.jpg",
+        "@type": "dctypes:Image",
+        "format": "image/jpeg"
+      },
+      "canvases": [
+        {
+          "@id": "http://localhost:8182/iiif/3/A0040002.tif/full/max/0/default.jpg",
+          "@type": "sc:Canvas",
+          "width": 2280,
+          "height": 1930,
+          "images": [
+            {
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://dl.ndl.go.jp/api/iiif/3440910/canvas/1",
+              "resource": {
+                "@id": "http://localhost:8182/iiif/3/A0040002.tif/full/max/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "width": 5335,
+                "height": 4005,
+                "service": {
+                  "@context": "http://iiif.io/api/image/3/context.json",
+                  "@id": "http://localhost:8182/iiif/3/A0040002.tif",
+                  "profile": "http://iiif.io/api/image/3/level1.json"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

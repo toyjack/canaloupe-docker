@@ -1,0 +1,28 @@
+services:
+  cantaloupe:
+    build:
+      context: ./cantaloupe
+    ports:
+      - "8182:8182"
+    volumes:
+      - cantaloupe-cache:/var/cache/cantaloupe
+      - cantaloupe-logs:/var/log/cantaloupe
+      # Uncomment and configure these if you have images to serve
+      - ./images:/images
+    restart: unless-stopped
+    environment:
+      - JAVA_OPTS=-Xmx2g
+
+  web:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+    volumes:
+      - ./web:/usr/share/nginx/html
+    depends_on:
+      - cantaloupe
+    restart: unless-stopped
+
+volumes:
+  cantaloupe-cache:
+  cantaloupe-logs:
