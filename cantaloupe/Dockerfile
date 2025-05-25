@@ -1,44 +1,72 @@
-FROM ubuntu:25.04
+FROM eclipse-temurin:17-jre-jammy
 
-LABEL maintainer="Guanwei Liu <toyjack@gmail.com>"
+LABEL maintainer="Guanwei Liu <toyjack@gmail.com>" \
+      version="5.0.7" \
+      description="Cantaloupe IIIF Image Server"
 
-ENV CANTALOUPE_VERSION=5.0.7 \
-    CANTALOUPE_HOME=/opt/cantaloupe 
+# Use non-root user ID for better security
+ARG CANTALOUPE_VERSION=5.0.7
+ARG CANTALOUPE_UID=1000
+ARG CANTALOUPE_GID=1000
 
-ARG CANTALOUPE_DOWNLOAD_URL=https://github.com/cantaloupe-project/cantaloupe/releases/download/v${CANTALOUPE_VERSION}/cantaloupe-${CANTALOUPE_VERSION}.zip
+ENV CANTALOUPE_HOME=/opt/cantaloupe \
+    JAVA_OPTS="-Xmx2g" \
+    CANTALOUPE_CONFIG=/opt/cantaloupe/cantaloupe.properties
 
-RUN groupadd -r cantaloupe && useradd -r -g cantaloupe -d ${CANTALOUPE_HOME} cantaloupe
+# Create user early to use consistent UID/GID
+RUN groupadd -g ${CANTALOUPE_GID} cantaloupe && \
+    useradd -u ${CANTALOUPE_UID} -g cantaloupe -d ${CANTALOUPE_HOME} -s /bin/bash cantaloupe
 
-WORKDIR /tmp
-ADD ${CANTALOUPE_DOWNLOAD_URL} /tmp/cantaloupe-${CANTALOUPE_VERSION}.zip
-
-
-# 安装依赖，解压并清理
+# Download and verify in a single layer
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends unzip openjdk-17-jre-headless ca-certificates && \
-    unzip cantaloupe-${CANTALOUPE_VERSION}.zip -d /opt/ && \
-    mv /opt/cantaloupe-${CANTALOUPE_VERSION}/cantaloupe.properties.sample /opt/cantaloupe-${CANTALOUPE_VERSION}/cantaloupe.properties && \
-    ln -s /opt/cantaloupe-${CANTALOUPE_VERSION} ${CANTALOUPE_HOME} && \
-    mkdir -p /var/log/cantaloupe /var/cache/cantaloupe && \
+    apt-get install -y --no-install-recommends \
+        wget \
+        unzip \
+        ca-certificates && \
+    # Download with checksum verification would be ideal here
+    wget -O /tmp/cantaloupe.zip \
+        "https://github.com/cantaloupe-project/cantaloupe/releases/download/v${CANTALOUPE_VERSION}/cantaloupe-${CANTALOUPE_VERSION}.zip" && \
+    # Create directories
+    mkdir -p /opt /var/log/cantaloupe /var/cache/cantaloupe && \
+    # Extract and setup
+    unzip /tmp/cantaloupe.zip -d /opt/ && \
+    mv "/opt/cantaloupe-${CANTALOUPE_VERSION}" "${CANTALOUPE_HOME}" && \
+    # Set permissions
     chown -R cantaloupe:cantaloupe ${CANTALOUPE_HOME} /var/log/cantaloupe /var/cache/cantaloupe && \
+    chmod -R 755 ${CANTALOUPE_HOME} && \
+    # Cleanup in same layer
+    apt-get remove -y wget unzip && \
+    apt-get autoremove -y && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/*
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# 设置工作目录
+# Copy configuration file with proper ownership
+COPY --chown=cantaloupe:cantaloupe cantaloupe.properties ${CANTALOUPE_HOME}/cantaloupe.properties
+
+# Set working directory
 WORKDIR ${CANTALOUPE_HOME}
 
-# 配置卷
+# Create mount points
 VOLUME ["/var/cache/cantaloupe", "/var/log/cantaloupe"]
 
-# 暴露端口
+# Expose port with documentation
 EXPOSE 8182
 
-# 切换到非root用户
+# Switch to non-root user
 USER cantaloupe
 
-# 添加配置文件
-COPY cantaloupe.properties ${CANTALOUPE_HOME}/cantaloupe.properties
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8182/iiif/2 || exit 1
 
-# 启动Cantaloupe
+# Use exec form for better signal handling
 ENTRYPOINT ["java"]
-CMD ["-Dcantaloupe.config=/opt/cantaloupe/cantaloupe.properties", "-Xmx2g", "-jar", "/opt/cantaloupe/cantaloupe-5.0.7.jar"]
+CMD ["-Dcantaloupe.config=/opt/cantaloupe/cantaloupe.properties", \
+     "-Dfile.encoding=UTF-8", \
+     "-Djava.awt.headless=true", \
+     "-server", \
+     "-Xmx2g", \
+     "-XX:+UseG1GC", \
+     "-XX:+UseStringDeduplication", \
+     "-jar", \
+     "/opt/cantaloupe/cantaloupe-5.0.7.jar"]
