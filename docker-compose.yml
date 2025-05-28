@@ -7,8 +7,7 @@ services:
     volumes:
       - ./cantaloupe-cache:/var/cache/cantaloupe
       - ./cantaloupe-logs:/var/log/cantaloupe
-      # Uncomment and configure these if you have images to serve
       - ${IMAGES_FOLDER}:/images
     restart: unless-stopped
     environment:
-      - JAVA_OPTS=-Xmx2g
+      - JAVA_OPTS=${JAVA_OPTS}
