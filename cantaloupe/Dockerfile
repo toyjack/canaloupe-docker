@@ -46,7 +46,7 @@ RUN apt-get update && \
 WORKDIR ${CANTALOUPE_HOME}
 VOLUME ["/var/cache/cantaloupe", "/var/log/cantaloupe"]
 EXPOSE 8182
-USER cantaloupe
+USER root 
 COPY cantaloupe.properties ${CANTALOUPE_HOME}/cantaloupe.properties
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
