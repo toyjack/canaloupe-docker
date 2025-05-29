@@ -5,7 +5,9 @@ LABEL maintainer="Guanwei Liu <toyjack@gmail.com>" \
       description="Cantaloupe IIIF Image Server"
 
 ARG CANTALOUPE_VERSION=5.0.7 \
-    JAVA_OPTS=-Xmx2g
+    JAVA_OPTS=-Xmx2g \
+    CANTALOUPE_UID=1000 \
+    CANTALOUPE_GID=1000
 ENV CANTALOUPE_HOME=/opt/cantaloupe \
     CANTALOUPE_DOWNLOAD_URL=https://github.com/cantaloupe-project/cantaloupe/releases/download/v${CANTALOUPE_VERSION}/cantaloupe-${CANTALOUPE_VERSION}.zip\
     CANTALOUPE_VERSION=${CANTALOUPE_VERSION} \
@@ -50,5 +52,5 @@ COPY cantaloupe.properties ${CANTALOUPE_HOME}/cantaloupe.properties
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8182/health || exit 1
 
-ENTRYPOINT ["java"]
-CMD ["-Dcantaloupe.config=$CANTALOUPE_HOME/cantaloupe.properties", "$JAVA_OPTS", "-jar", "/opt/cantaloupe/cantaloupe-$CANTALOUPE_HOME.jar"]
+ENTRYPOINT ["sh", "-c"]
+CMD ["java -Dcantaloupe.config=$CANTALOUPE_HOME/cantaloupe.properties $JAVA_OPTS -jar $CANTALOUPE_HOME/cantaloupe-$CANTALOUPE_VERSION.jar"]
