@@ -1,5 +1,6 @@
 services:
   cantaloupe:
+    user: root
     build:
       context: ./cantaloupe
     ports:
